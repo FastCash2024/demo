@@ -35,7 +35,7 @@ const DatosDePerfilSchema = new Schema({
   email: { type: String, lowercase: true, index: true },
   fechaNacimiento: { type: Date },
   curp: { type: String, unique: true, sparse: true, uppercase: true },
-  rfc: { type: String, unique: true, sparse: true, uppercase: true },
+  // rfc: { type: String,  sparse: true, uppercase: true },
   estadoCivil: { type: String },
   nivelEducativo: { type: String },
   trabajo: { type: String },

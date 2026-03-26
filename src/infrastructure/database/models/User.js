@@ -14,5 +14,5 @@ const userSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-// 👇 ESTA ES LA LÍNEA MÁGICA QUE FALTA O ESTÁ ROTA 👇
+// 👇 ESTA ES LA LÍNEA MÁGICA QUE FALTA O ESTÁ ROTA 👇      
 module.exports = mongoose.model('User', userSchema);

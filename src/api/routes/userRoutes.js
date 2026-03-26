@@ -9,6 +9,7 @@ const authMiddleware = require('../middleware/authMiddleware');
 // Rutas Públicas (Cualquiera puede entrar)
 router.get('/test', userController.testUser);
 router.post('/register', userController.registerUser);
+router.post('/login', userController.loginUser);  // <-- ruta legacy restaurada
 router.post('/request-otp', userController.requestOtp);
 router.post('/validate-otp', userController.validateOtp);
 

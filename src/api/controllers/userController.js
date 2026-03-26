@@ -1,8 +1,9 @@
 // src/api/controllers/userController.js
 const RegisterUserUseCase = require('../../application/usecases/registerUser');
+const LoginUserUseCase = require('../../application/usecases/loginUser');
 const RequestOtpUseCase = require('../../application/usecases/requestOtp');
 const ValidateOtpUseCase = require('../../application/usecases/validateOtp');
-const Customer = require('../../infrastructure/database/models/Customer'); 
+const Customer = require('../../infrastructure/database/models/Customer');
 
 // 1. PRUEBA
 const testUser = async (req, res) => {
@@ -27,7 +28,21 @@ const registerUser = async (req, res) => {
   }
 };
 
-// 3. REQUEST OTP
+// 3. LOGIN (legacy, email+password)
+const loginUser = async (req, res) => {
+  try {
+    const resultado = await LoginUserUseCase.execute(req.body);
+    res.status(200).json({
+      mensaje: 'Login exitoso',
+      token: resultado.token,
+      usuario: resultado.user
+    });
+  } catch (error) {
+    res.status(401).json({ error: error.message });
+  }
+};
+
+// 4. REQUEST OTP
 const requestOtp = async (req, res) => {
   try {
     const { email } = req.body;
@@ -61,6 +76,7 @@ const validateOtp = async (req, res) => {
 module.exports = {
   testUser,
   registerUser,
+  loginUser,
   requestOtp,
   validateOtp
 };

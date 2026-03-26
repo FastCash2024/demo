@@ -43,6 +43,11 @@ const DatosDePerfilSchema = new Schema({
   provinciaCiudad: { type: String },
   sexo: { type: String, enum: ['Masculino', 'Femenino', 'Otro'] },
   
+  // URLs para documentos de verificación
+  urlCurpFrontal: { type: String },
+  urlCurpReverso: { type: String },
+  urlSelfie: { type: String },
+  
   // Contactos de emergencia
   nombreContactoAmigo: { type: String },
   numeroDeTelefonoMovilAmigo: { type: String },

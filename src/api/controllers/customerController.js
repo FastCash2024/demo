@@ -1,5 +1,4 @@
 // src/api/controllers/customerController.js
-const bcrypt = require('bcryptjs');
 const Customer = require('../../infrastructure/database/models/Customer');
 
 // ✅ VALIDACIÓN DE EMAIL
@@ -42,26 +41,15 @@ const registerCustomer = async (req, res) => {
       nombres,
       apellidos,
       email,
-      password,
       curp,
       rfc
     } = datosDePerfil;
 
     // Validar campos obligatorios
-    if (!nombres || !apellidos || !email || !password) {
+    if (!nombres || !apellidos || !email) {
       return res.status(400).json({
-        error: 'Campos requeridos en datosDePerfil: nombres, apellidos, email, password'
+        error: 'Campos requeridos en datosDePerfil: nombres, apellidos, email'
       });
-    }
-
-    // Validar email
-    if (!validarEmail(email)) {
-      return res.status(400).json({ error: 'Email inválido' });
-    }
-
-    // Validar que la contraseña tenga mínimo 6 caracteres
-    if (password.length < 6) {
-      return res.status(400).json({ error: 'La contraseña debe tener mínimo 6 caracteres' });
     }
 
     // Validar CURP si se proporciona
@@ -96,17 +84,12 @@ const registerCustomer = async (req, res) => {
       }
     }
 
-    // 🔐 ENCRIPTAR CONTRASEÑA
-    const salt = await bcrypt.genSalt(10);
-    const passwordEncriptada = await bcrypt.hash(password, salt);
-
     // 🏗️ CREAR NUEVO CLIENTE
     const nuevoCliente = new Customer({
       email: email.toLowerCase(),
       datosDePerfil: {
         ...datosDePerfil,
         email: email.toLowerCase(),
-        password: passwordEncriptada, // Guardar contraseña encriptada
         curp: curp?.toUpperCase(),
         rfc: rfc?.toUpperCase()
       },
@@ -276,60 +259,6 @@ const addCuentaBancaria = async (req, res) => {
   }
 };
 
-// 6️⃣ LOGIN DE CUSTOMER (Autenticación)
-const loginCustomer = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    // Validaciones
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email y password requeridos' });
-    }
-
-    // Buscar cliente por email
-    const cliente = await Customer.findOne({ email: email.toLowerCase() });
-    if (!cliente) {
-      return res.status(401).json({ error: 'Email o contraseña incorrectos' });
-    }
-
-    // Validar contraseña
-    const passwordValida = await bcrypt.compare(password, cliente.datosDePerfil.password);
-    if (!passwordValida) {
-      return res.status(401).json({ error: 'Email o contraseña incorrectos' });
-    }
-
-    // Generar JWT (usar el mismo token que en usuarios)
-    const jwt = require('jsonwebtoken');
-    const token = jwt.sign(
-      { email: cliente.email, id: cliente._id },
-      process.env.JWT_SECRET || 'clave_secreta_super_segura_de_desarrollo',
-      { expiresIn: '8h' }
-    );
-
-    // Preparar datos de perfil sin password
-    const datosPerfil = cliente.datosDePerfil.toObject();
-    delete datosPerfil.password;
-
-    res.status(200).json({
-      mensaje: '✅ Login exitoso 🎉',
-      token: token,
-      cliente: {
-        id: cliente._id,
-        email: cliente.email,
-        datosDePerfil: datosPerfil,
-        cuentasBancarias: cliente.cuentasBancarias,
-        dispositivos: cliente.dispositivos,
-        estado: cliente.estado,
-        verificado: cliente.verificado,
-        createdAt: cliente.createdAt
-      }
-    });
-  } catch (error) {
-    console.error('Error en loginCustomer:', error);
-    res.status(500).json({ error: 'Error en login: ' + error.message });
-  }
-};
-
 // 5️⃣ OBTENER TODOS LOS CLIENTES (Admin)
 const getAllCustomers = async (req, res) => {
   try {
@@ -354,6 +283,6 @@ module.exports = {
   getCustomerProfile,
   updateCustomerProfile,
   addCuentaBancaria,
-  getAllCustomers,
-  loginCustomer
+  getAllCustomers
+  // loginCustomer // ❌ DESHABILITADO - usar OTP
 };

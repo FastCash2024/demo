@@ -33,7 +33,6 @@ const DatosDePerfilSchema = new Schema({
   apellidos: { type: String, required: true },
   numeroDeTelefonoMovil: { type: String, index: true },
   email: { type: String, lowercase: true, index: true },
-  password: { type: String }, // Se encriptará en el controller
   fechaNacimiento: { type: Date },
   curp: { type: String, unique: true, sparse: true, uppercase: true },
   rfc: { type: String, unique: true, sparse: true, uppercase: true },
@@ -61,7 +60,7 @@ const CustomerSchema = new Schema({
   // Email único como identificador
   email: { type: String, required: true, lowercase: true, unique: true, index: true },
   
-  // Perfil completo del cliente (incluye password encriptado)
+  // Perfil completo del cliente (sin password - eso va en User)
   datosDePerfil: { type: DatosDePerfilSchema, required: true },
   
   // Información bancaria
@@ -69,6 +68,10 @@ const CustomerSchema = new Schema({
   
   // Dispositivos registrados
   dispositivos: { type: [DispositivoSchema], default: [] },
+  
+  // OTP para autenticación
+  otp: { type: String },
+  otpExpiresAt: { type: Date },
   
   // Metadata
   estado: {
@@ -79,11 +82,6 @@ const CustomerSchema = new Schema({
   fechaUltimaActividad: { type: Date, default: Date.now },
   verificado: { type: Boolean, default: false }
 }, { timestamps: true, collection: 'customers' });
-
-// Índices compuestos para búsquedas rápidas
-CustomerSchema.index({ 'datosDePerfil.numeroDeTelefonoMovil': 1 });
-CustomerSchema.index({ 'datosDePerfil.curp': 1 });
-CustomerSchema.index({ 'datosDePerfil.rfc': 1 });
 
 const Customer = mongoose.model('Customer', CustomerSchema);
 

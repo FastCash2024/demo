@@ -7,8 +7,6 @@ const authMiddleware = require('../middleware/authMiddleware');
 // 📝 POST: Registrar nuevo cliente (SIN autenticación)
 router.post('/register', customerController.registerCustomer);
 
-// � POST: Login de customer (SIN autenticación)
-router.post('/login', customerController.loginCustomer);
 
 // �📋 GET: Obtener perfil del cliente por ID (CON autenticación)
 router.get('/:id', authMiddleware, customerController.getCustomerProfile);

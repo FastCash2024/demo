@@ -1,13 +1,13 @@
 // src/api/controllers/userController.js
 const RegisterUserUseCase = require('../../application/usecases/registerUser');
-// const LoginUserUseCase = require('../../application/usecases/loginUser');
-const LoginUserUseCase = require('../../application/usecases/loginUser'); 
-const User = require('../../infrastructure/database/models/User'); 
+const RequestOtpUseCase = require('../../application/usecases/requestOtp');
+const ValidateOtpUseCase = require('../../application/usecases/validateOtp');
+const Customer = require('../../infrastructure/database/models/Customer'); 
 
 // 1. PRUEBA
 const testUser = async (req, res) => {
   try {
-    const count = await User.countDocuments();
+    const count = await Customer.countDocuments();
     res.json({ mensaje: '¡Hola desde el CONTROLADOR de Usuarios! 🎮', usuariosEnBD: count });
   } catch (error) {
     res.status(500).json({ error: 'Error al comunicarse con la base de datos' });
@@ -27,10 +27,25 @@ const registerUser = async (req, res) => {
   }
 };
 
-// 3. LOGIN
-const loginUser = async (req, res) => {
+// 3. REQUEST OTP
+const requestOtp = async (req, res) => {
   try {
-    const resultado = await LoginUserUseCase.execute(req.body);
+    const { email } = req.body;
+    const resultado = await RequestOtpUseCase.execute(email);
+    
+    res.status(200).json({
+      mensaje: resultado.message
+    });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// 4. VALIDATE OTP
+const validateOtp = async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    const resultado = await ValidateOtpUseCase.execute(email, otp);
     
     res.status(200).json({
       mensaje: 'Login exitoso',
@@ -46,5 +61,6 @@ const loginUser = async (req, res) => {
 module.exports = {
   testUser,
   registerUser,
-  loginUser
+  requestOtp,
+  validateOtp
 };

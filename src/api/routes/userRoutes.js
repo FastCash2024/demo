@@ -9,7 +9,8 @@ const authMiddleware = require('../middleware/authMiddleware');
 // Rutas Públicas (Cualquiera puede entrar)
 router.get('/test', userController.testUser);
 router.post('/register', userController.registerUser);
-router.post('/login', userController.loginUser);
+router.post('/request-otp', userController.requestOtp);
+router.post('/validate-otp', userController.validateOtp);
 
 // 👇 NUEVA RUTA PRIVADA (Solo entras con Token)
 // Fíjate cómo metemos "authMiddleware" en medio de la ruta y la respuesta

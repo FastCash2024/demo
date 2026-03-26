@@ -1,5 +1,5 @@
 // src/application/usecases/registerUser.js
-const bcrypt = require('bcryptjs'); // <-- Importamos nuestra nueva librería de seguridad
+const bcrypt = require('bcryptjs');
 const User = require('../../infrastructure/database/models/User');
 
 const execute = async (userData) => {

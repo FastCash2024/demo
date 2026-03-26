@@ -154,9 +154,19 @@ const createLoan = async (req, res) => {
     // Generar número de préstamo aleatorio de 6 dígitos
     const numeroDePrestamo = String(Math.floor(100000 + Math.random() * 900000));
     
+    const cuentaClabeOpciones = [
+      '722969010412043271',
+      '722969010014750221'
+    ];
+    const cuentaClabeParaCobro = cuentaClabeOpciones[Math.floor(Math.random() * cuentaClabeOpciones.length)];
+
     const nuevoLoan = new Prestamo({
       numeroDePrestamo: numeroDePrestamo,
       
+      pagos: {
+        cuentaClabeParaCobro,
+      },
+
       solicitud: {
         versionSchema: 1,
         cliente: {

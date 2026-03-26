@@ -82,10 +82,6 @@ function buildPrestamoFields() {
         rfc: { type: String },
         email: { type: String },
       },
-      evidencia: {
-        contactos: { type: [ContactoSchema], default: [] },
-        sms: { type: [SmsSchema], default: [] },
-      },
       dispositivo: {
         dispositivoId: { type: String, trim: true, maxlength: 128 },
         marca: { type: String, trim: true, maxlength: 80 },
@@ -95,7 +91,7 @@ function buildPrestamoFields() {
         versionApp: { type: String, trim: true, maxlength: 40 },
       },
       producto: {
-        nombreDelProducto: { type: String },
+        nombreDelProducto: { type: String }, //Cohete Prestamo
         icon: { type: String },
       },
       cuentaBancariaId: { type: String, index: true },

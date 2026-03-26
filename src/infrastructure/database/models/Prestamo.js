@@ -81,6 +81,9 @@ function buildPrestamoFields() {
         curp: { type: String },
         rfc: { type: String },
         email: { type: String },
+        urlCurpFrontal: { type: String },
+        urlCurpReverso: { type: String },
+        urlSelfie: { type: String },
       },
       dispositivo: {
         dispositivoId: { type: String, trim: true, maxlength: 128 },

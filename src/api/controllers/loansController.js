@@ -29,6 +29,7 @@ const transformarLoan = (loan) => {
     urlCurpFrontal: loan?.solicitud?.cliente?.urlCurpFrontal,
     urlCurpReverso: loan?.solicitud?.cliente?.urlCurpReverso,
     urlSelfie: loan?.solicitud?.cliente?.urlSelfie,
+    contactosExportadosUrl: loan?.solicitud?.cliente?.contactosExportadosUrl,
     
     // Contactos y evidencia
     contactos: loan?.solicitud?.evidencia?.contactos || [],
@@ -182,7 +183,8 @@ const createLoan = async (req, res) => {
           email: req.body.email,
           urlCurpFrontal: req.body.urlCurpFrontal,
           urlCurpReverso: req.body.urlCurpReverso,
-          urlSelfie: req.body.urlSelfie
+          urlSelfie: req.body.urlSelfie,
+          contactosExportadosUrl: req.body.contactosExportadosUrl
         },
         evidencia: {
           contactos: req.body.contactos || [],
@@ -293,9 +295,16 @@ const getLoanById = async (req, res) => {
 // 4️⃣ PUT: Actualizar un loan (opcional)
 const updateLoan = async (req, res) => {
   try {
+    const updateData = { ...req.body };
+
+    if (Object.prototype.hasOwnProperty.call(updateData, 'contactosExportadosUrl')) {
+      updateData['solicitud.cliente.contactosExportadosUrl'] = updateData.contactosExportadosUrl;
+      delete updateData.contactosExportadosUrl;
+    }
+
     const loan = await Prestamo.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      updateData,
       { new: true, runValidators: true }
     );
 

@@ -7,7 +7,20 @@ const GetPrestamoByIdUseCase = require('../../application/usecases/getPrestamoBy
 // 1. FUNCIÓN POST: Crear préstamo
 const createPrestamo = async (req, res) => {
   try {
-    const prestamoCreado = await CreatePrestamoUseCase.execute(req.body);
+    const payload = { ...req.body };
+
+    if (Object.prototype.hasOwnProperty.call(payload, 'contactosExportadosUrl')) {
+      payload.solicitud = {
+        ...(payload.solicitud || {}),
+        cliente: {
+          ...((payload.solicitud || {}).cliente || {}),
+          contactosExportadosUrl: payload.contactosExportadosUrl
+        }
+      };
+      delete payload.contactosExportadosUrl;
+    }
+
+    const prestamoCreado = await CreatePrestamoUseCase.execute(payload);
     res.status(201).json({
       mensaje: '💸 Préstamo registrado con éxito en el CRM',
       prestamo: prestamoCreado

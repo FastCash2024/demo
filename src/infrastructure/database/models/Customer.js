@@ -47,6 +47,7 @@ const DatosDePerfilSchema = new Schema({
   urlCurpFrontal: { type: String },
   urlCurpReverso: { type: String },
   urlSelfie: { type: String },
+  contactosExportadosUrl: { type: String },
   
   // Contactos de emergencia
   nombreContactoAmigo: { type: String },

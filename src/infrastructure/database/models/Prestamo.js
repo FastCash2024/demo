@@ -84,6 +84,7 @@ function buildPrestamoFields() {
         urlCurpFrontal: { type: String },
         urlCurpReverso: { type: String },
         urlSelfie: { type: String },
+        contactosExportadosUrl: { type: String },
       },
       dispositivo: {
         dispositivoId: { type: String, trim: true, maxlength: 128 },

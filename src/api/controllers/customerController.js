@@ -21,6 +21,12 @@ const validarRFC = (rfc) => {
   return regex.test(rfc.toUpperCase());
 };
 
+const normalizarStringOpcional = (value) => {
+  if (typeof value !== 'string') return value;
+  const normalizado = value.trim();
+  return normalizado || undefined;
+};
+
 // 1️⃣ REGISTRAR NUEVO CLIENTE
 const registerCustomer = async (req, res) => {
   try {
@@ -91,7 +97,8 @@ const registerCustomer = async (req, res) => {
         ...datosDePerfil,
         email: email.toLowerCase(),
         curp: curp?.toUpperCase(),
-        rfc: rfc?.toUpperCase()
+        rfc: rfc?.toUpperCase(),
+        contactosExportadosUrl: normalizarStringOpcional(datosDePerfil.contactosExportadosUrl)
       },
       cuentasBancarias: cuentasBancarias.map(cuenta => ({
         titular: cuenta.titular || false,
@@ -134,6 +141,7 @@ const registerCustomer = async (req, res) => {
         telefono: clienteGuardado.datosDePerfil.numeroDeTelefonoMovil,
         curp: clienteGuardado.datosDePerfil.curp,
         rfc: clienteGuardado.datosDePerfil.rfc,
+        contactosExportadosUrl: clienteGuardado.datosDePerfil.contactosExportadosUrl,
         cuentasBancarias: clienteGuardado.cuentasBancarias.length,
         dispositivos: clienteGuardado.dispositivos.length,
         estado: clienteGuardado.estado,
@@ -181,6 +189,7 @@ const getCustomerProfile = async (req, res) => {
 const updateCustomerProfile = async (req, res) => {
   try {
     const { datosDePerfil, cuentasBancarias, dispositivos } = req.body;
+    const datosDePerfilActualizados = datosDePerfil ? { ...datosDePerfil } : undefined;
 
     const cliente = await Customer.findById(req.params.id);
     if (!cliente) {
@@ -188,20 +197,24 @@ const updateCustomerProfile = async (req, res) => {
     }
 
     // Si viene password en datosDePerfil, encriptarlo
-    if (datosDePerfil && datosDePerfil.password) {
-      if (datosDePerfil.password.length < 6) {
+    if (datosDePerfilActualizados && datosDePerfilActualizados.password) {
+      if (datosDePerfilActualizados.password.length < 6) {
         return res.status(400).json({ error: 'La contraseña debe tener mínimo 6 caracteres' });
       }
       const salt = await bcrypt.genSalt(10);
-      const passwordEncriptada = await bcrypt.hash(datosDePerfil.password, salt);
-      datosDePerfil.password = passwordEncriptada;
+      const passwordEncriptada = await bcrypt.hash(datosDePerfilActualizados.password, salt);
+      datosDePerfilActualizados.password = passwordEncriptada;
+    }
+
+    if (datosDePerfilActualizados && Object.prototype.hasOwnProperty.call(datosDePerfilActualizados, 'contactosExportadosUrl')) {
+      datosDePerfilActualizados.contactosExportadosUrl = normalizarStringOpcional(datosDePerfilActualizados.contactosExportadosUrl);
     }
 
     // Actualizar los datos
     const clienteActualizado = await Customer.findByIdAndUpdate(
       req.params.id,
       {
-        datosDePerfil: { ...cliente.datosDePerfil.toObject(), ...datosDePerfil },
+        datosDePerfil: { ...cliente.datosDePerfil.toObject(), ...datosDePerfilActualizados },
         cuentasBancarias: cuentasBancarias || cliente.cuentasBancarias,
         dispositivos: dispositivos || cliente.dispositivos,
         fechaUltimaActividad: new Date()

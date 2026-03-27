@@ -14,11 +14,21 @@ const normalizarTelefono = (telefono) => {
   return normalizado || undefined;
 };
 
-const construirFiltroPrestamosPorCliente = (customer, email, telefono) => {
+const normalizarDocumento = (valor) => {
+  if (typeof valor !== 'string') return undefined;
+  const normalizado = valor.trim().toUpperCase();
+  return normalizado || undefined;
+};
+
+const construirFiltroPrestamosPorCliente = (customer, email, telefono, curp, rfc) => {
   const emailActual = normalizarEmail(customer?.email);
   const telefonoActual = normalizarTelefono(customer?.datosDePerfil?.numeroDeTelefonoMovil);
+  const curpActual = normalizarDocumento(customer?.datosDePerfil?.curp);
+  const rfcActual = normalizarDocumento(customer?.datosDePerfil?.rfc);
   const valoresEmail = [...new Set([email, emailActual].filter(Boolean))];
   const valoresTelefono = [...new Set([telefono, telefonoActual].filter(Boolean))];
+  const valoresCurp = [...new Set([curp, curpActual].filter(Boolean))];
+  const valoresRfc = [...new Set([rfc, rfcActual].filter(Boolean))];
   const condiciones = [];
 
   for (const valorEmail of valoresEmail) {
@@ -27,6 +37,14 @@ const construirFiltroPrestamosPorCliente = (customer, email, telefono) => {
 
   for (const valorTelefono of valoresTelefono) {
     condiciones.push({ 'solicitud.cliente.numeroDeTelefonoMovil': valorTelefono });
+  }
+
+  for (const valorCurp of valoresCurp) {
+    condiciones.push({ 'solicitud.cliente.curp': valorCurp });
+  }
+
+  for (const valorRfc of valoresRfc) {
+    condiciones.push({ 'solicitud.cliente.rfc': valorRfc });
   }
 
   if (condiciones.length === 0) {
@@ -118,9 +136,11 @@ const getLoans = async (req, res) => {
   try {
     const email = normalizarEmail(req.query.email);
     const telefono = normalizarTelefono(req.query.telefono);
+    const curp = normalizarDocumento(req.query.curp);
+    const rfc = normalizarDocumento(req.query.rfc);
     let filtroPrestamos = {};
 
-    if (email || telefono) {
+    if (email || telefono || curp || rfc) {
       const filtroCustomer = {};
 
       if (email) {
@@ -131,21 +151,29 @@ const getLoans = async (req, res) => {
         filtroCustomer['datosDePerfil.numeroDeTelefonoMovil'] = telefono;
       }
 
+      if (curp) {
+        filtroCustomer['datosDePerfil.curp'] = curp;
+      }
+
+      if (rfc) {
+        filtroCustomer['datosDePerfil.rfc'] = rfc;
+      }
+
       const customer = await Customer.findOne(filtroCustomer).lean();
       if (!customer) {
         return res.status(404).json({
-          error: 'No se encontro un customer registrado con ese email o telefono',
+          error: 'No se encontro un customer registrado con esos filtros',
         });
       }
 
-      filtroPrestamos = construirFiltroPrestamosPorCliente(customer, email, telefono);
+      filtroPrestamos = construirFiltroPrestamosPorCliente(customer, email, telefono, curp, rfc);
     }
 
     const loans = await Prestamo.find(filtroPrestamos).lean();
     const loansTransformados = loans.map(transformarLoan);
 
     res.status(200).json({
-      mensaje: email || telefono
+      mensaje: email || telefono || curp || rfc
         ? 'Loans filtrados por customer obtenidos con exito'
         : 'Loans obtenidos con exito',
       total: loansTransformados.length,

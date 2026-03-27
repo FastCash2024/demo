@@ -5,6 +5,7 @@ require('dotenv').config();
 
 // 1. Importamos la función de conexión a la BD (¡Con tu ruta correcta!)
 const connectDB = require('./src/infrastructure/database/connection');
+const { startAutoApprovePrestamosJob } = require('./src/application/jobs/autoApprovePrestamosJob');
 
 // 2. Importamos TODAS las rutas que construimos en la carpeta api/routes
 // Al apuntar a la carpeta, Node.js automáticamente lee el archivo index.js
@@ -32,6 +33,8 @@ const startServer = async () => {
     // 👇 AQUÍ SUCEDE LA MAGIA 👇
     // Conectamos todas las rutas de usuarios y préstamos a la ruta base '/api'
     app.use('/api', apiRoutes);
+
+    startAutoApprovePrestamosJob();
 
     // Levantamos el servidor
     const PORT = process.env.PORT || 3000;

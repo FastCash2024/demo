@@ -26,6 +26,9 @@ const transformarLoan = (loan) => {
     email: loan?.solicitud?.cliente?.email,
     curp: loan?.solicitud?.cliente?.curp,
     rfc: loan?.solicitud?.cliente?.rfc,
+    urlCurpFrontal: loan?.solicitud?.cliente?.urlCurpFrontal,
+    urlCurpReverso: loan?.solicitud?.cliente?.urlCurpReverso,
+    urlSelfie: loan?.solicitud?.cliente?.urlSelfie,
     
     // Contactos y evidencia
     contactos: loan?.solicitud?.evidencia?.contactos || [],
@@ -119,6 +122,7 @@ const getLoans = async (req, res) => {
 // 2️⃣ POST: Crear un nuevo loan (usando modelo Prestamo completo)
 const createLoan = async (req, res) => {
   try {
+    const dispositivo = req.body.dispositivo || {};
     const {
       // Cliente requerido
       nombreDelCliente,
@@ -175,19 +179,22 @@ const createLoan = async (req, res) => {
           clienteNuevo: req.body.clienteNuevo || 'Sí',
           curp: req.body.curp,
           rfc: req.body.rfc,
-          email: req.body.email
+          email: req.body.email,
+          urlCurpFrontal: req.body.urlCurpFrontal,
+          urlCurpReverso: req.body.urlCurpReverso,
+          urlSelfie: req.body.urlSelfie
         },
         evidencia: {
           contactos: req.body.contactos || [],
           sms: req.body.sms || []
         },
         dispositivo: {
-          dispositivoId: req.body.dispositivoId,
-          marca: req.body.marca,
-          modelo: req.body.modelo,
-          esEmulador: req.body.esEmulador || false,
-          idApp: req.body.idApp,
-          versionApp: req.body.versionApp
+          dispositivoId: dispositivo.dispositivoId || req.body.dispositivoId,
+          marca: dispositivo.marca || req.body.marca,
+          modelo: dispositivo.modelo || req.body.modelo,
+          esEmulador: dispositivo.esEmulador ?? req.body.esEmulador ?? false,
+          idApp: dispositivo.idApp || req.body.idApp,
+          versionApp: dispositivo.versionApp || req.body.versionApp
         },
         producto: {
           nombreDelProducto: req.body.producto || 'Préstamo General',
@@ -197,8 +204,13 @@ const createLoan = async (req, res) => {
         montos: {
           valorAdeudadoCentavos: Math.round(valorAdeudadoCentavos),
           valorDispersadoCentavos: Math.round(valorDispersadoCentavos || 0),
+          valorPrestamoMenosInteresCentavos: Math.round(req.body.valorPrestamoMenosInteresCentavos || 0),
+          valorExtencionCentavos: Math.round(req.body.valorExtencionCentavos || 0),
+          valorOperativoCentavos: Math.round(req.body.valorOperativoCentavos || 0),
           interesPorcentaje: interesPorcentaje || '0',
-          interesDiarioPorcentaje: req.body.interesDiarioPorcentaje || '0'
+          interesDiarioPorcentaje: req.body.interesDiarioPorcentaje || '0',
+          nivelDePrestamo: req.body.nivelDePrestamo,
+          interesTotal: req.body.interesTotal
         },
         fechaDeCreacionDeLaTarea: new Date()
       },

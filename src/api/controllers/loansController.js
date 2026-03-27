@@ -20,7 +20,7 @@ const normalizarDocumento = (valor) => {
   return normalizado || undefined;
 };
 
-const construirFiltroPrestamosPorCliente = (customer, email, telefono, curp, rfc) => {
+const construirFiltroPrestamos = ({ customer, email, telefono, curp, rfc }) => {
   const emailActual = normalizarEmail(customer?.email);
   const telefonoActual = normalizarTelefono(customer?.datosDePerfil?.numeroDeTelefonoMovil);
   const curpActual = normalizarDocumento(customer?.datosDePerfil?.curp);
@@ -160,13 +160,7 @@ const getLoans = async (req, res) => {
       }
 
       const customer = await Customer.findOne(filtroCustomer).lean();
-      if (!customer) {
-        return res.status(404).json({
-          error: 'No se encontro un customer registrado con esos filtros',
-        });
-      }
-
-      filtroPrestamos = construirFiltroPrestamosPorCliente(customer, email, telefono, curp, rfc);
+      filtroPrestamos = construirFiltroPrestamos({ customer, email, telefono, curp, rfc });
     }
 
     const loans = await Prestamo.find(filtroPrestamos).lean();

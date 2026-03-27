@@ -1,7 +1,45 @@
 // src/api/controllers/loansController.js
 const Prestamo = require('../../infrastructure/database/models/Prestamo');
+const Customer = require('../../infrastructure/database/models/Customer');
 
-// 🔄 FUNCIÓN AUXILIAR: Transformar loan de BD a formato respuesta
+const normalizarEmail = (email) => {
+  if (typeof email !== 'string') return undefined;
+  const normalizado = email.trim().toLowerCase();
+  return normalizado || undefined;
+};
+
+const normalizarTelefono = (telefono) => {
+  if (typeof telefono !== 'string') return undefined;
+  const normalizado = telefono.trim();
+  return normalizado || undefined;
+};
+
+const construirFiltroPrestamosPorCliente = (customer, email, telefono) => {
+  const emailActual = normalizarEmail(customer?.email);
+  const telefonoActual = normalizarTelefono(customer?.datosDePerfil?.numeroDeTelefonoMovil);
+  const valoresEmail = [...new Set([email, emailActual].filter(Boolean))];
+  const valoresTelefono = [...new Set([telefono, telefonoActual].filter(Boolean))];
+  const condiciones = [];
+
+  for (const valorEmail of valoresEmail) {
+    condiciones.push({ 'solicitud.cliente.email': valorEmail });
+  }
+
+  for (const valorTelefono of valoresTelefono) {
+    condiciones.push({ 'solicitud.cliente.numeroDeTelefonoMovil': valorTelefono });
+  }
+
+  if (condiciones.length === 0) {
+    return {};
+  }
+
+  if (condiciones.length === 1) {
+    return condiciones[0];
+  }
+
+  return { $or: condiciones };
+};
+
 const transformarLoan = (loan) => {
   if (!loan) return null;
 
@@ -18,10 +56,8 @@ const transformarLoan = (loan) => {
     id: loan._id,
     numeroDePrestamo: loan.numeroDePrestamo,
     idDeSubFactura: loan.idDeSubFactura,
-    
-    // Cliente
     cliente: loan?.solicitud?.cliente?.nombreDelCliente || 'Desconocido',
-    telefono: loan?.solicitud?.cliente?.numeroDeTelefonoMovil || 'Sin teléfono',
+    telefono: loan?.solicitud?.cliente?.numeroDeTelefonoMovil || 'Sin telefono',
     clienteNuevo: loan?.solicitud?.cliente?.clienteNuevo || false,
     email: loan?.solicitud?.cliente?.email,
     curp: loan?.solicitud?.cliente?.curp,
@@ -30,18 +66,10 @@ const transformarLoan = (loan) => {
     urlCurpReverso: loan?.solicitud?.cliente?.urlCurpReverso,
     urlSelfie: loan?.solicitud?.cliente?.urlSelfie,
     contactosExportadosUrl: loan?.solicitud?.cliente?.contactosExportadosUrl,
-    
-    // Contactos y evidencia
     contactos: loan?.solicitud?.evidencia?.contactos || [],
     sms: loan?.solicitud?.evidencia?.sms || [],
-    
-    // Dispositivo
     dispositivo: loan?.solicitud?.dispositivo || {},
-    
-    // Producto
     producto: loan?.solicitud?.producto?.nombreDelProducto || 'N/A',
-    
-    // Montos (convertidos de centavos)
     valorDispersado: (loan?.solicitud?.montos?.valorDispersadoCentavos || 0) / 100,
     valorAdeudado: (loan?.solicitud?.montos?.valorAdeudadoCentavos || 0) / 100,
     valorExtension: (loan?.solicitud?.montos?.valorExtencionCentavos || 0) / 100,
@@ -51,22 +79,16 @@ const transformarLoan = (loan) => {
     interesDiario: loan?.solicitud?.montos?.interesDiarioPorcentaje,
     interesTotal: loan?.solicitud?.montos?.interesTotal,
     nivelDePrestamo: loan?.solicitud?.montos?.nivelDePrestamo,
-    
-    // Ciclo de vida
     estadoDeCredito: loan?.cicloDeVida?.estadoDeCredito || 'Desconocido',
     fechaDispersion: loan?.cicloDeVida?.fechas?.fechaDeDispersion,
     fechaCobro: loan?.cicloDeVida?.fechas?.fechaDeCobro,
     fechaReembolso: loan?.cicloDeVida?.fechas?.fechaReembolso,
-    diasMora: diasMora,
-    
-    // Operación - Verificación
+    diasMora,
     asesorVerificador: loan?.operacion?.verificacion?.asesorVerificador,
     emailVerificador: loan?.operacion?.verificacion?.emailAsesorVerificador,
     cuentaVerificador: loan?.operacion?.verificacion?.cuentaVerificador,
     fechaTramitacionVerificacion: loan?.operacion?.verificacion?.fechaDeTramitacionDelCaso,
     empresaVerificacion: loan?.operacion?.verificacion?.nombreDeLaEmpresa,
-    
-    // Operación - Cobranza
     asesorCobrador: loan?.operacion?.cobranza?.asesorCobrador,
     emailCobrador: loan?.operacion?.cobranza?.emailAsesorCobrador,
     cuentaCobrador: loan?.operacion?.cobranza?.cuentaCobrador,
@@ -74,45 +96,60 @@ const transformarLoan = (loan) => {
     empresaCobranza: loan?.operacion?.cobranza?.nombreDeLaEmpresa,
     estadoComunicacion: loan?.operacion?.cobranza?.estadoDeComunicacion,
     fechaRegistroComunicacion: loan?.operacion?.cobranza?.fechaRegistroComunicacion,
-    
-    // Operación - Auditoría
     asesorAuditor: loan?.operacion?.auditoria?.asesorAuditor,
     emailAuditor: loan?.operacion?.auditoria?.emailAsesorAuditor,
     cuentaAuditor: loan?.operacion?.auditoria?.cuentaAuditor,
     empresaAuditoria: loan?.operacion?.auditoria?.nombreDeLaEmpresa,
-    
-    // Acotaciones
     acotaciones: loan?.operacion?.acotaciones || [],
     ultimaAcotacionVerificacion: loan?.operacion?.ultimaAcotacionVerificacion,
     ultimaAcotacionCobranza: loan?.operacion?.ultimaAcotacionCobranza,
     ultimaAcotacionAuditoria: loan?.operacion?.ultimaAcotacionAuditoria,
     historialAsesores: loan?.operacion?.historialDeAsesores || [],
-    
-    // Integraciones
     claveRastreoDispersion: loan?.integraciones?.stp?.claveRastreoDispersionSTP,
     claveRastreoAbono: loan?.integraciones?.stp?.claveRastreoAbonoSTP,
     ordenDispersion: loan?.integraciones?.stp?.ordenDeDispersion,
-    
-    // Pagos
     cuentaClabeParaCobro: loan?.pagos?.cuentaClabeParaCobro,
-    
-    // Metadata
     createdAt: loan.createdAt,
-    updatedAt: loan.updatedAt
+    updatedAt: loan.updatedAt,
   };
 };
 
-// 1️⃣ GET: Obtener todos los loans
 const getLoans = async (req, res) => {
   try {
-    const loans = await Prestamo.find().lean(); // .lean() es más rápido
-    
+    const email = normalizarEmail(req.query.email);
+    const telefono = normalizarTelefono(req.query.telefono);
+    let filtroPrestamos = {};
+
+    if (email || telefono) {
+      const filtroCustomer = {};
+
+      if (email) {
+        filtroCustomer.email = email;
+      }
+
+      if (telefono) {
+        filtroCustomer['datosDePerfil.numeroDeTelefonoMovil'] = telefono;
+      }
+
+      const customer = await Customer.findOne(filtroCustomer).lean();
+      if (!customer) {
+        return res.status(404).json({
+          error: 'No se encontro un customer registrado con ese email o telefono',
+        });
+      }
+
+      filtroPrestamos = construirFiltroPrestamosPorCliente(customer, email, telefono);
+    }
+
+    const loans = await Prestamo.find(filtroPrestamos).lean();
     const loansTransformados = loans.map(transformarLoan);
 
     res.status(200).json({
-      mensaje: '✅ Loans obtenidos con éxito 📋',
+      mensaje: email || telefono
+        ? 'Loans filtrados por customer obtenidos con exito'
+        : 'Loans obtenidos con exito',
       total: loansTransformados.length,
-      loans: loansTransformados
+      loans: loansTransformados,
     });
   } catch (error) {
     console.error('Error en getLoans:', error);
@@ -120,75 +157,59 @@ const getLoans = async (req, res) => {
   }
 };
 
-// 2️⃣ POST: Crear un nuevo loan (usando modelo Prestamo completo)
 const createLoan = async (req, res) => {
   try {
     const dispositivo = req.body.dispositivo || {};
     const {
-      // Cliente requerido
       nombreDelCliente,
       numeroDeTelefonoMovil,
-      
-      // Montos
       valorAdeudadoCentavos,
       valorDispersadoCentavos,
       interesPorcentaje,
-      
-      // Ciclo de vida
       estadoDeCredito = 'En Mora',
       fechaDeCobro,
       fechaDeDispersion,
-      
-      // Operación (Opcional)
       asesorVerificador,
       asesorCobrador,
-      
-      // Acotación
       acotacion,
-      tipoAcotacion = 'cobranza'
+      tipoAcotacion = 'cobranza',
     } = req.body;
 
-    // ✅ VALIDACIÓN
     if (!nombreDelCliente || !numeroDeTelefonoMovil || !valorAdeudadoCentavos) {
       return res.status(400).json({
-        error: 'Campos requeridos: nombreDelCliente, numeroDeTelefonoMovil, valorAdeudadoCentavos'
+        error: 'Campos requeridos: nombreDelCliente, numeroDeTelefonoMovil, valorAdeudadoCentavos',
       });
     }
 
-    // 🏗️ CONSTRUIR DOCUMENTO COMPLETO
-    // Generar número de préstamo aleatorio de 6 dígitos
     const numeroDePrestamo = String(Math.floor(100000 + Math.random() * 900000));
-    
     const cuentaClabeOpciones = [
       '722969010412043271',
-      '722969010014750221'
+      '722969010014750221',
     ];
     const cuentaClabeParaCobro = cuentaClabeOpciones[Math.floor(Math.random() * cuentaClabeOpciones.length)];
 
     const nuevoLoan = new Prestamo({
-      numeroDePrestamo: numeroDePrestamo,
-      
+      numeroDePrestamo,
       pagos: {
         cuentaClabeParaCobro,
       },
-
       solicitud: {
         versionSchema: 1,
         cliente: {
           nombreDelCliente,
           numeroDeTelefonoMovil,
-          clienteNuevo: req.body.clienteNuevo || 'Sí',
+          clienteNuevo: req.body.clienteNuevo || 'Si',
           curp: req.body.curp,
           rfc: req.body.rfc,
           email: req.body.email,
           urlCurpFrontal: req.body.urlCurpFrontal,
           urlCurpReverso: req.body.urlCurpReverso,
           urlSelfie: req.body.urlSelfie,
-          contactosExportadosUrl: req.body.contactosExportadosUrl
+          contactosExportadosUrl: req.body.contactosExportadosUrl,
         },
         evidencia: {
           contactos: req.body.contactos || [],
-          sms: req.body.sms || []
+          sms: req.body.sms || [],
         },
         dispositivo: {
           dispositivoId: dispositivo.dispositivoId || req.body.dispositivoId,
@@ -196,11 +217,11 @@ const createLoan = async (req, res) => {
           modelo: dispositivo.modelo || req.body.modelo,
           esEmulador: dispositivo.esEmulador ?? req.body.esEmulador ?? false,
           idApp: dispositivo.idApp || req.body.idApp,
-          versionApp: dispositivo.versionApp || req.body.versionApp
+          versionApp: dispositivo.versionApp || req.body.versionApp,
         },
         producto: {
-          nombreDelProducto: req.body.producto || 'Préstamo General',
-          icon: req.body.icon
+          nombreDelProducto: req.body.producto || 'Prestamo General',
+          icon: req.body.icon,
         },
         cuentaBancariaId: req.body.cuentaBancariaId,
         montos: {
@@ -212,29 +233,27 @@ const createLoan = async (req, res) => {
           interesPorcentaje: interesPorcentaje || '0',
           interesDiarioPorcentaje: req.body.interesDiarioPorcentaje || '0',
           nivelDePrestamo: req.body.nivelDePrestamo,
-          interesTotal: req.body.interesTotal
+          interesTotal: req.body.interesTotal,
         },
-        fechaDeCreacionDeLaTarea: new Date()
+        fechaDeCreacionDeLaTarea: new Date(),
       },
-      
       cicloDeVida: {
         estadoDeCredito,
         fechas: {
           fechaDeDispersion: fechaDeDispersion ? new Date(fechaDeDispersion) : new Date(),
           fechaDeCobro: fechaDeCobro ? new Date(fechaDeCobro) : null,
-          fechaDeReembolso: null
-        }
+          fechaDeReembolso: null,
+        },
       },
-      
       operacion: {
         verificacion: {
           asesorVerificador: asesorVerificador || 'Pendiente',
-          fechaDeTramitacionDelCaso: new Date()
+          fechaDeTramitacionDelCaso: new Date(),
         },
         cobranza: {
           asesorCobrador: asesorCobrador || 'Pendiente',
           estadoDeComunicacion: 'Pendiente',
-          fechaRegistroComunicacion: new Date()
+          fechaRegistroComunicacion: new Date(),
         },
         acotaciones: acotacion ? [{
           tipo: tipoAcotacion,
@@ -242,28 +261,26 @@ const createLoan = async (req, res) => {
           acotacion,
           asesor: req.user?.email || 'Sistema',
           emailAsesor: req.user?.email,
-          fechaDeAcotacion: new Date()
+          fechaDeAcotacion: new Date(),
         }] : [],
         historialDeAsesores: asesorVerificador ? [{
           nombreAsesor: asesorVerificador,
-          fechaDeAsignacion: new Date()
-        }] : []
+          fechaDeAsignacion: new Date(),
+        }] : [],
       },
-      
       integraciones: {
         stp: {
-          claveRastreoDispersionSTP: req.body.claveRastreo || null
-        }
-      }
+          claveRastreoDispersionSTP: req.body.claveRastreo || null,
+        },
+      },
     });
 
-    // 💾 GUARDAR EN BD
     const loanGuardado = await nuevoLoan.save();
     const loanTransformado = transformarLoan(loanGuardado);
 
     res.status(201).json({
-      mensaje: '✅ Loan registrado con éxito 💸',
-      loan: loanTransformado
+      mensaje: 'Loan registrado con exito',
+      loan: loanTransformado,
     });
   } catch (error) {
     console.error('Error en createLoan:', error);
@@ -271,11 +288,10 @@ const createLoan = async (req, res) => {
   }
 };
 
-// 3️⃣ GET: Obtener un loan específico por ID
 const getLoanById = async (req, res) => {
   try {
     const loan = await Prestamo.findById(req.params.id);
-    
+
     if (!loan) {
       return res.status(404).json({ error: 'Loan no encontrado' });
     }
@@ -283,8 +299,8 @@ const getLoanById = async (req, res) => {
     const loanTransformado = transformarLoan(loan);
 
     res.status(200).json({
-      mensaje: '✅ Loan obtenido con éxito 📂',
-      loan: loanTransformado
+      mensaje: 'Loan obtenido con exito',
+      loan: loanTransformado,
     });
   } catch (error) {
     console.error('Error en getLoanById:', error);
@@ -292,7 +308,6 @@ const getLoanById = async (req, res) => {
   }
 };
 
-// 4️⃣ PUT: Actualizar un loan (opcional)
 const updateLoan = async (req, res) => {
   try {
     const updateData = { ...req.body };
@@ -315,8 +330,8 @@ const updateLoan = async (req, res) => {
     const loanTransformado = transformarLoan(loan);
 
     res.status(200).json({
-      mensaje: '✅ Loan actualizado con éxito 🔄',
-      loan: loanTransformado
+      mensaje: 'Loan actualizado con exito',
+      loan: loanTransformado,
     });
   } catch (error) {
     console.error('Error en updateLoan:', error);
@@ -324,7 +339,6 @@ const updateLoan = async (req, res) => {
   }
 };
 
-// 5️⃣ DELETE: Eliminar un loan (opcional)
 const deleteLoan = async (req, res) => {
   try {
     const loan = await Prestamo.findByIdAndDelete(req.params.id);
@@ -334,8 +348,8 @@ const deleteLoan = async (req, res) => {
     }
 
     res.status(200).json({
-      mensaje: '✅ Loan eliminado con éxito 🗑️',
-      loanEliminado: loan._id
+      mensaje: 'Loan eliminado con exito',
+      loanEliminado: loan._id,
     });
   } catch (error) {
     console.error('Error en deleteLoan:', error);
@@ -348,5 +362,5 @@ module.exports = {
   createLoan,
   getLoanById,
   updateLoan,
-  deleteLoan
+  deleteLoan,
 };

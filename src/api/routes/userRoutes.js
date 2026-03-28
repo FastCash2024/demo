@@ -13,3 +13,4 @@ router.get('/me', authMiddleware, userController.getMe);
 router.get('/perfil', authMiddleware, userController.getMe);
 
 module.exports = router;
+     

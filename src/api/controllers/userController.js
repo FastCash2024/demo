@@ -1,4 +1,4 @@
-const RegisterCustomerAuthUseCase = require('../../application/usecases/registerCustomerAuth');
+const RegisterUserUseCase = require('../../application/usecases/registerUser');
 const LoginUserUseCase = require('../../application/usecases/loginUser');
 const RequestOtpUseCase = require('../../application/usecases/requestOtp');
 const ValidateOtpUseCase = require('../../application/usecases/validateOtp');
@@ -16,11 +16,10 @@ const testUser = async (req, res) => {
 
 const registerUser = async (req, res) => {
   try {
-    const resultado = await RegisterCustomerAuthUseCase.execute(req.body);
+    const usuarioCreado = await RegisterUserUseCase.execute(req.body);
     res.status(201).json({
       mensaje: 'Registro exitoso',
-      token: resultado.token,
-      usuario: resultado.user,
+      usuario: usuarioCreado,
     });
   } catch (error) {
     res.status(400).json({ error: error.message });
